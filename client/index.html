@@ -2,12 +2,67 @@
 <html lang="en">
 <head>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script src = "/socket.io/socket.io.js"></script>
     <script type="text/babel" >
         "use strict";
-    
+        let socket;
+        let canvas;
+        let ctx;
+        let myTime;
+        let counter = 0;
+        let position = {x: Math.floor(Math.random()*400), y:Math.floor(Math.random()*400)};
+        let draws = {};
+        const name = Math.floor(Math.random() * 1000);
+
+        const connect = () => {
+            socket = io.connect();
+
+            socket.on('msg', (data) => {
+                draws = data.draws;
+            })
+            socket.on('connect', () => {
+                myTime = new Date().getTime();
+                socket.emit('join', {name: name, time: myTime, coords: position});
+                setInterval(() => {
+                    if(Math.floor(Math.random()* 5) < 1){
+                        myTime = new Date().getTime();
+                        position.x += Math.floor((Math.random() * 11) - 5);
+                        position.y += Math.floor((Math.random() * 11) - 5);
+                    }
+                    socket.emit('update', {time: myTime, coords: position});
+                },200);
+            })
+        }
+        const update = () => {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            window.requestAnimationFrame(update);
+
+            let keys = Object.keys(draws);
+            for(let i = 0; i < keys.length; i++){
+                ctx.fillStyle = '#000000';
+                let call = draws[keys[i]];
+                if(keys[i] == name){
+                    ctx.fillStyle = '#ff0000';
+                }
+
+                ctx.fillRect(call.coords.x,call.coords.y,100,100);
+            }            
+        }
+        const init = () => {
+            connect();
+
+            canvas = document.getElementById('myCanvas');
+            canvas.height = 400;
+            canvas.width = 400;
+
+            ctx = canvas.getContext('2d');
+            update();
+        }
+        window.onload = init;
     </script>
 </head>
 <body>
-
+    <canvas id="myCanvas" style="border: solid 2px black">
+    </canvas>
 </body>
 </html>
